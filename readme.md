@@ -1,3 +1,6 @@
+Notice:
+This Skeleton Base on Laravel 5.5 + PHP7 ,But You can Update to Laravel 5.6+PHP7.1
+
 Step 1：
 `composer update`
 
