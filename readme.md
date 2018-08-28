@@ -17,3 +17,6 @@ For example ,You can configure like current file.
 Step 6:
 The skeleton develops implementations for the API Service,So you must be sure Your project is based on API services.
 
+Step 7:
+API URL uniform `/api/`  prefix.
+
