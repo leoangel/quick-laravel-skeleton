@@ -1,4 +1,9 @@
 <?php
+/**
+ *
+ *
+ * @since   2018/5/27 9:58
+ */
 
 
 namespace App\Models;
@@ -71,14 +76,27 @@ class BaseModel extends Model
         return $this->_ORM->where($field, $value)->value($returnField);
     }
 
-    private function assembleOrmWhereConditions($conditions, $or = false)
+    public function getOneValueByFields($where, $returnField)
+    {
+        return self::assembleOrmWhereConditions($where)->value($returnField);
+    }
+
+    protected function assembleOrmWhereConditions($conditions, $or = false)
     {
         $where = [];
         $whereIn = [];
         $whereNotIn = [];
-
+        $whereOrLike = [];
         foreach ($conditions as $k => $v) {
-            if (preg_match('/^%(.+?)%$/', $k, $m)) {
+            if ($k === '%%' && is_array($v)) {
+                foreach ($v as $f => $l) {
+                    $whereOrLike[] = [
+                        $f,
+                        'like',
+                        '%' . $l . '%'
+                    ];
+                }
+            } elseif (preg_match('/^%(.+?)%$/', $k, $m)) {
                 $where[] = [
                     $m[1],
                     'like',
@@ -137,6 +155,11 @@ class BaseModel extends Model
 
         if ($or) {
             $res = $this->_ORM;
+
+            foreach ($whereOrLike as $w) {
+                $res->orWhere($w[0], $w[1], $w[2]);
+            }
+
             foreach ($where as $w) {
                 $res->orWhere($w[0], $w[1], $w[2]);
             }
@@ -151,6 +174,11 @@ class BaseModel extends Model
             return $res;
         } else {
             $res = $this->_ORM->where($where);
+
+            foreach ($whereOrLike as $w) {
+                $res->orWhere($w[0], $w[1], $w[2]);
+            }
+
             foreach ($whereIn as $k => $v) {
                 $res->whereIn($k, $v);
             }
@@ -167,7 +195,7 @@ class BaseModel extends Model
         $offset = 0,
         $limit = BusinessConstants::PAGE_SIZE,
         $orderBy = 'id',
-        $sort = 'ASC',
+        $sort = 'DESC',
         $fields = ['*'],
         $or = false
     ) {
@@ -219,7 +247,7 @@ class BaseModel extends Model
         }
     }
 
-    public function selectByRawSql($sql, $values)
+    public function selectByRawSql($sql, $values = [])
     {
         $connName = \DB::connection()->getName();
         if (!is_null(static::$_conn)) {
@@ -275,5 +303,10 @@ class BaseModel extends Model
         $cacheKey = CacheFunction::makeCacheKey(CacheKeyConstants::SERVICE_METHOD_CACHE_KEY, get_called_class(), $calledFunc, $extraKey);
 
         return \Cache::set($cacheKey, $data, $expire);
+    }
+
+    public function assembleWhereInPlaceholders($val)
+    {
+        return ' (' . implode(',', array_fill(0, count($val), '?')) . ') ';
     }
 }
